@@ -1,0 +1,403 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dora — Assistente Financeira</title>
+  <style>
+    :root {
+      --bg: #f6f7fb;
+      --card: #fff;
+      --text: #1e2430;
+      --muted: #707889;
+      --primary: #6c5ce7;
+      --primary-2: #8e7dff;
+      --green: #1ca56b;
+      --red: #df4c61;
+      --border: #e8eaf0;
+      --shadow: 0 10px 30px rgba(30,36,48,.08);
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0; font-family: Inter, system-ui, -apple-system, Segoe UI, sans-serif;
+      background: var(--bg); color: var(--text);
+    }
+    .app { max-width: 1180px; margin: auto; padding: 24px; }
+    header {
+      display:flex; align-items:center; justify-content:space-between; gap:16px;
+      margin-bottom:20px;
+    }
+    .brand { display:flex; align-items:center; gap:12px; }
+    .logo {
+      width:52px; height:52px; border-radius:16px; display:grid; place-items:center;
+      background:linear-gradient(135deg,var(--primary),var(--primary-2)); color:white; font-size:27px;
+      box-shadow: var(--shadow);
+    }
+    h1,h2,h3,p { margin-top:0; }
+    h1 { margin-bottom:3px; font-size:26px; }
+    .muted { color:var(--muted); font-size:14px; }
+    .grid { display:grid; grid-template-columns: 1.1fr .9fr; gap:18px; }
+    .card {
+      background:var(--card); border:1px solid var(--border); border-radius:20px;
+      padding:20px; box-shadow:var(--shadow);
+    }
+    .stats { display:grid; grid-template-columns:repeat(3,1fr); gap:12px; }
+    .stat { padding:16px; border-radius:16px; background:#fafafe; border:1px solid var(--border); }
+    .stat strong { display:block; font-size:22px; margin-top:5px; }
+    .green { color:var(--green); } .red { color:var(--red); }
+    .chat { height:440px; overflow:auto; padding:6px 2px; }
+    .msg { display:flex; margin:10px 0; }
+    .msg.user { justify-content:flex-end; }
+    .bubble {
+      max-width:82%; padding:12px 14px; border-radius:16px; line-height:1.45;
+      background:#f0efff; white-space:pre-wrap;
+    }
+    .user .bubble { background:var(--primary); color:#fff; }
+    .composer { display:flex; gap:8px; margin-top:12px; }
+    input, select, textarea, button {
+      font:inherit;
+    }
+    input, select, textarea {
+      width:100%; border:1px solid var(--border); border-radius:12px; padding:12px;
+      outline:none; background:#fff;
+    }
+    input:focus, select:focus, textarea:focus { border-color:var(--primary); }
+    button {
+      border:0; border-radius:12px; padding:11px 15px; cursor:pointer; font-weight:700;
+    }
+    .primary { background:var(--primary); color:white; }
+    .secondary { background:#eeeefe; color:#5144b8; }
+    .mic {
+      min-width:54px; background:#fff; border:1px solid var(--border); font-size:20px;
+    }
+    .mic.listening { background:#ffe9ee; color:var(--red); }
+    .actions { display:flex; gap:8px; flex-wrap:wrap; }
+    .section-title { display:flex; justify-content:space-between; align-items:center; gap:10px; }
+    .transactions { margin-top:12px; }
+    .transaction {
+      display:flex; justify-content:space-between; gap:12px; align-items:center;
+      padding:13px 0; border-bottom:1px solid var(--border);
+    }
+    .transaction:last-child { border-bottom:0; }
+    .left { display:flex; gap:10px; align-items:center; min-width:0; }
+    .icon {
+      width:40px; height:40px; border-radius:12px; display:grid; place-items:center;
+      background:#f3f4f8;
+    }
+    .details { min-width:0; }
+    .details strong, .details small { display:block; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+    .details small { color:var(--muted); margin-top:2px; }
+    .amount { font-weight:800; white-space:nowrap; }
+    .notes { margin-top:18px; }
+    .note {
+      padding:12px; background:#fffdf0; border:1px solid #f1e8a7; border-radius:12px; margin-top:8px;
+    }
+    .empty { color:var(--muted); text-align:center; padding:25px 5px; }
+    .confirm {
+      margin-top:8px; padding:12px; border:1px dashed #c8c4f7; border-radius:14px; background:#faf9ff;
+    }
+    .confirm-actions { display:flex; gap:8px; margin-top:10px; }
+    .danger { color:var(--red); }
+    @media(max-width:850px) {
+      .grid { grid-template-columns:1fr; }
+      .stats { grid-template-columns:1fr; }
+      .chat { height:380px; }
+    }
+  </style>
+</head>
+<body>
+<div class="app">
+  <header>
+    <div class="brand">
+      <div class="logo">D</div>
+      <div>
+        <h1>Dora</h1>
+        <div class="muted">Seu bloco de notas financeiro inteligente</div>
+      </div>
+    </div>
+    <button class="secondary" onclick="showHelp()">Como usar</button>
+  </header>
+
+  <div class="stats">
+    <div class="stat"><span class="muted">Entradas</span><strong id="income" class="green">R$ 0,00</strong></div>
+    <div class="stat"><span class="muted">Saídas</span><strong id="expense" class="red">R$ 0,00</strong></div>
+    <div class="stat"><span class="muted">Saldo</span><strong id="balance">R$ 0,00</strong></div>
+  </div>
+
+  <div class="grid" style="margin-top:18px">
+    <section class="card">
+      <div class="section-title">
+        <div>
+          <h2>Converse com a Dora</h2>
+          <div class="muted">Digite ou fale. Nada é conectado ao seu banco.</div>
+        </div>
+      </div>
+
+      <div id="chat" class="chat"></div>
+
+      <div class="composer">
+        <input id="message" placeholder='Ex.: "Gastei 35 reais no mercado hoje."' onkeydown="if(event.key==='Enter') sendMessage()">
+        <button id="mic" class="mic" title="Falar com a Dora" onclick="toggleMic()">🎤</button>
+        <button class="primary" onclick="sendMessage()">Enviar</button>
+      </div>
+    </section>
+
+    <section class="card">
+      <div class="section-title">
+        <div>
+          <h2>Lançamentos</h2>
+          <div class="muted">Somente os dados informados por você.</div>
+        </div>
+        <button class="secondary" onclick="exportData()">Exportar</button>
+      </div>
+      <div id="transactions" class="transactions"></div>
+
+      <div class="notes">
+        <div class="section-title"><h2 style="margin:0">Anotações e lembretes</h2><button class="secondary" onclick="addNote()">+ Nota</button></div>
+        <div id="notes"></div>
+      </div>
+    </section>
+  </div>
+</div>
+
+<script>
+const KEY = "dora_financeira_v1";
+let db = JSON.parse(localStorage.getItem(KEY) || '{"transactions":[],"notes":[]}');
+let pending = null;
+let recognition = null;
+
+const expenseCats = ["Alimentação","Transporte","Compras","Moradia","Contas","Saúde","Educação","Lazer","Assinaturas","Outros"];
+const incomeCats = ["Salário","Pagamento","Venda","Pix recebido","Presente","Outros"];
+
+const money = n => new Intl.NumberFormat("pt-BR",{style:"currency",currency:"BRL"}).format(n);
+const save = () => { localStorage.setItem(KEY, JSON.stringify(db)); render(); };
+const todayISO = () => new Date().toISOString().slice(0,10);
+
+function addChat(text, who="dora") {
+  const chat = document.getElementById("chat");
+  const row = document.createElement("div");
+  row.className = "msg " + (who === "user" ? "user" : "");
+  const bubble = document.createElement("div");
+  bubble.className = "bubble";
+  bubble.textContent = text;
+  row.appendChild(bubble); chat.appendChild(row);
+  chat.scrollTop = chat.scrollHeight;
+}
+
+function render() {
+  const income = db.transactions.filter(t=>t.type==="entrada").reduce((s,t)=>s+t.value,0);
+  const expense = db.transactions.filter(t=>t.type==="saida").reduce((s,t)=>s+t.value,0);
+  document.getElementById("income").textContent = money(income);
+  document.getElementById("expense").textContent = money(expense);
+  document.getElementById("balance").textContent = money(income-expense);
+
+  const el = document.getElementById("transactions");
+  if (!db.transactions.length) el.innerHTML = '<div class="empty">Nenhum lançamento ainda.<br>Experimente dizer: “Gastei 35 reais no mercado.”</div>';
+  else {
+    el.innerHTML = [...db.transactions].reverse().map((t,i)=>{
+      const sign = t.type==="entrada" ? "+" : "-";
+      const icon = t.type==="entrada" ? "🟢" : "🔴";
+      return `<div class="transaction">
+        <div class="left"><div class="icon">${icon}</div><div class="details">
+          <strong>${esc(t.description)}</strong>
+          <small>${esc(t.category)}${t.location ? " · "+esc(t.location):""} · ${formatDate(t.date)}</small>
+        </div></div>
+        <div class="amount ${t.type==="entrada"?"green":"red"}">${sign} ${money(t.value)}
+          <div><button class="secondary" style="padding:5px 8px;font-size:12px" onclick="editTransaction('${t.id}')">Editar</button></div>
+        </div>
+      </div>`;
+    }).join("");
+  }
+
+  const notes = document.getElementById("notes");
+  notes.innerHTML = db.notes.length ? [...db.notes].reverse().map(n=>`
+    <div class="note"><strong>${n.reminder ? "🔔 Lembrete" : "📝 Nota"}</strong>
+      <div>${esc(n.text)}</div>
+      ${n.date ? `<small class="muted">Data: ${formatDate(n.date)}</small>`:""}
+    </div>`).join("") : '<div class="empty">Nenhuma anotação.</div>';
+}
+
+function esc(s) { return String(s||"").replace(/[&<>"']/g, m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"}[m])); }
+function formatDate(s) { if(!s) return "Hoje"; const [y,m,d]=s.split("-"); return `${d}/${m}/${y}`; }
+
+function parseMoney(text) {
+  const m = text.match(/(?:r\$?\s*)?(\d{1,3}(?:\.\d{3})*(?:,\d{1,2})?|\d+(?:[.,]\d{1,2})?)/i);
+  if(!m) return null;
+  let x=m[1].replace(/\./g,"").replace(",",".");
+  return Number(x);
+}
+function parseDate(text) {
+  const lower=text.toLowerCase();
+  const now=new Date();
+  if(lower.includes("hoje")) return todayISO();
+  if(lower.includes("ontem")) { const d=new Date(now); d.setDate(d.getDate()-1); return d.toISOString().slice(0,10); }
+  const m=lower.match(/(?:dia|em)\s+(\d{1,2})(?:\/|-)(\d{1,2})(?:\/|-)?(\d{2,4})?/);
+  if(m) {
+    let y=m[3] ? Number(m[3]) : now.getFullYear(); if(y<100) y+=2000;
+    return `${y}-${String(m[2]).padStart(2,"0")}-${String(m[1]).padStart(2,"0")}`;
+  }
+  return todayISO();
+}
+function detectType(text) {
+  const l=text.toLowerCase();
+  if(/\b(recebi|ganhei|entrou|caiu|salário|salario|pagamento recebido|pix recebido|vendi|venda)\b/.test(l)) return "entrada";
+  if(/\b(gastei|paguei|pagar|gasto|comprei|comprei|saiu|custou|despesa)\b/.test(l)) return "saida";
+  return null;
+}
+function detectCategory(text,type) {
+  const l=text.toLowerCase();
+  const rules = type==="entrada" ? [
+    ["Salário",/sal[aá]rio/],["Pagamento",/pagamento/],["Venda",/vendi|venda/],["Pix recebido",/pix/],["Presente",/presente|ganhei/]
+  ] : [
+    ["Alimentação",/mercado|supermercado|almo[cç]o|jantar|comida|lanche|restaurante|ifood/],
+    ["Transporte",/uber|99|[ôo]nibus|ônibus|gasolina|combust[ií]vel|metr[oô]|transporte/],
+    ["Compras",/roupa|sapato|compras|shopping/],
+    ["Moradia",/aluguel|aluguel|casa/],
+    ["Contas",/internet|luz|[aá]gua|telefone|conta/],
+    ["Saúde",/farm[aá]cia|rem[eé]dio|m[eé]dico|dentista|sa[uú]de/],
+    ["Educação",/faculdade|curso|escola|mensalidade/],
+    ["Lazer",/cinema|jogo|passeio|lazer/],
+    ["Assinaturas",/netflix|spotify|assinatura/]
+  ];
+  for(const [cat,re] of rules) if(re.test(l)) return cat;
+  return "Outros";
+}
+function extractDescription(text,type,category) {
+  let l=text.replace(/^(hoje|ontem)\s*/i,"").trim();
+  l=l.replace(/r\$?\s*\d{1,3}(?:\.\d{3})*(?:,\d{1,2})?|\d+(?:[.,]\d{1,2})?/i,"").trim();
+  l=l.replace(/\b(reais?|real)\b/ig,"").trim();
+  l=l.replace(/\b(hoje|ontem|amanhã|amanha)\b/ig,"").trim();
+  l=l.replace(/^(eu\s+)?(gastei|paguei|pagar|gasto|comprei|recebi|ganhei|vendi|venda|entrou|caiu)\s+/i,"").trim();
+  l=l.replace(/\b(no|na|em|de|do|da)\s+/i,"").trim();
+  return l || category;
+}
+function detectLocation(text) {
+  const m=text.match(/\b(?:no|na|em)\s+([A-Za-zÀ-ÿ0-9 _-]{2,30})/i);
+  return m ? m[1].trim().replace(/[.!?]+$/,"") : "";
+}
+
+function splitStatements(text) {
+  return text.split(/\s+(?:e depois|depois|e em seguida|e também)\s+/i).filter(Boolean);
+}
+
+function interpret(text) {
+  const parts=splitStatements(text);
+  const results=[];
+  for(const part of parts) {
+    const type=detectType(part);
+    const value=parseMoney(part);
+    if(type && value) {
+      const category=detectCategory(part,type);
+      results.push({
+        id: crypto.randomUUID(), type, value, description:extractDescription(part,type,category),
+        location:detectLocation(part), date:parseDate(part), category, observation:""
+      });
+    }
+  }
+  return results;
+}
+
+function confirmation(items) {
+  pending=items;
+  const lines=items.map(t=>`${t.type==="entrada"?"🟢 Entrada":"🔴 Saída"} — ${money(t.value)} — ${t.description} — ${t.category} — ${formatDate(t.date)}`).join("\n");
+  addChat("Entendi! Vou registrar:\n\n"+lines+"\n\nPosso salvar? Use “sim” para confirmar ou “não” para cancelar.");
+}
+function commitPending() {
+  if(!pending) return;
+  db.transactions.push(...pending);
+  pending=null; save();
+  addChat("Salvo! 💜 Já está no seu histórico.");
+}
+function cancelPending() { pending=null; addChat("Tudo bem! Não salvei nada."); }
+
+function handleQuery(text) {
+  const l=text.toLowerCase();
+  if(/^(sim|pode|pode salvar|confirma|confirmo|salva|salvar)$/i.test(l)) { if(pending) commitPending(); else addChat("Não há nenhum lançamento pendente para confirmar."); return true; }
+  if(/^(n[aã]o|cancela|cancelar)$/i.test(l)) { if(pending) cancelPending(); else addChat("Tudo bem. 😊"); return true; }
+
+  if(/quanto.*(gastei|sa[ií]da|despesas).*m[eê]s|gastei.*m[eê]s/.test(l)) {
+    const month=new Date().toISOString().slice(0,7); const n=db.transactions.filter(t=>t.type==="saida"&&t.date.startsWith(month)).reduce((s,t)=>s+t.value,0);
+    addChat(`Neste mês você gastou ${money(n)}. 🔴`); return true;
+  }
+  if(/quanto.*(recebi|entrou).*m[eê]s/.test(l)) {
+    const month=new Date().toISOString().slice(0,7); const n=db.transactions.filter(t=>t.type==="entrada"&&t.date.startsWith(month)).reduce((s,t)=>s+t.value,0);
+    addChat(`Neste mês entraram ${money(n)}. 🟢`); return true;
+  }
+  if(/quanto.*(tenho|saldo)/.test(l)) {
+    const n=db.transactions.reduce((s,t)=>s+(t.type==="entrada"?t.value:-t.value),0);
+    addChat(`Seu saldo registrado pela Dora é ${money(n)}. 💰`); return true;
+  }
+  if(/maior.*gasto|maiores.*despesas/.test(l)) {
+    const arr=[...db.transactions].filter(t=>t.type==="saida").sort((a,b)=>b.value-a.value).slice(0,5);
+    addChat(arr.length ? "Seus maiores gastos:\n"+arr.map((t,i)=>`${i+1}. ${t.description} — ${money(t.value)}`).join("\n") : "Ainda não há gastos registrados."); return true;
+  }
+  if(/quanto.*(com|no|na).*mercado/.test(l)) {
+    const n=db.transactions.filter(t=>t.type==="saida"&&(t.category==="Alimentação"||/mercado/i.test(t.description))).reduce((s,t)=>s+t.value,0);
+    addChat(`Até agora, os gastos registrados como mercado somam ${money(n)}. 🛒`); return true;
+  }
+  return false;
+}
+
+function addNote() {
+  const text=prompt("O que você quer anotar?");
+  if(!text) return;
+  db.notes.push({id:crypto.randomUUID(),text,reminder:false,date:""});
+  save(); addChat("Anotado! 📝");
+}
+
+function showHelp() {
+  addChat("Você pode falar comigo naturalmente. Exemplos:\n• “Gastei 35 reais no mercado hoje.”\n• “Recebi 1.500 reais de salário.”\n• “Quanto gastei esse mês?”\n• “Quanto tenho de saldo?”\n• “Anota que preciso pagar a internet dia 30.”\n\nOs dados ficam neste navegador e não há conexão com bancos.");
+}
+
+function sendMessage() {
+  const input=document.getElementById("message"); const text=input.value.trim(); if(!text) return;
+  input.value=""; addChat(text,"user");
+
+  if(handleQuery(text)) return;
+
+  if(/anota|anotar|lembra|lembrete|preciso pagar|vou receber/.test(text.toLowerCase()) && !detectType(text)) {
+    const date=parseDate(text);
+    const reminder=/lembra|lembrete|pagar|receber/.test(text.toLowerCase());
+    db.notes.push({id:crypto.randomUUID(),text,date,reminder}); save();
+    addChat(reminder ? `Anotado como lembrete! 🔔 ${text}` : `Anotado! 📝`);
+    return;
+  }
+
+  const items=interpret(text);
+  if(items.length) confirmation(items);
+  else addChat("Posso registrar entradas, saídas, notas e lembretes. Tente algo como “Gastei R$ 35 no mercado hoje.” 😊");
+}
+
+function editTransaction(id) {
+  const t=db.transactions.find(x=>x.id===id); if(!t) return;
+  const v=prompt("Novo valor:", String(t.value).replace(".",","));
+  if(v===null) return;
+  const n=Number(v.replace(/\./g,"").replace(",","."));
+  if(!Number.isFinite(n)||n<=0) return alert("Valor inválido.");
+  t.value=n; save(); addChat(`Corrigido! O lançamento de ${t.description} agora está em ${money(n)}.`);
+}
+
+function exportData() {
+  const blob=new Blob([JSON.stringify(db,null,2)],{type:"application/json"});
+  const a=document.createElement("a"); a.href=URL.createObjectURL(blob); a.download="dora-dados-financeiros.json"; a.click();
+  URL.revokeObjectURL(a.href);
+}
+
+function toggleMic() {
+  const btn=document.getElementById("mic");
+  const SpeechRecognition=window.SpeechRecognition||window.webkitSpeechRecognition;
+  if(!SpeechRecognition) { alert("O reconhecimento de voz não está disponível neste navegador. Tente Chrome ou Edge."); return; }
+  if(recognition) { recognition.stop(); return; }
+  recognition=new SpeechRecognition(); recognition.lang="pt-BR"; recognition.interimResults=false; recognition.continuous=false;
+  btn.classList.add("listening"); btn.textContent="⏹️";
+  recognition.onresult=e=>{ document.getElementById("message").value=e.results[0][0].transcript; sendMessage(); };
+  recognition.onerror=()=>{ addChat("Não consegui entender o áudio. Pode tentar falar novamente?"); };
+  recognition.onend=()=>{ btn.classList.remove("listening"); btn.textContent="🎤"; recognition=null; };
+  recognition.start();
+}
+
+addChat("Oi! Eu sou a Dora 💜\nPode me contar seus gastos e recebimentos do jeito que você fala normalmente. Eu organizo tudo para você.");
+render();
+</script>
+</body>
+</html>
